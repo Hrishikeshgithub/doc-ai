@@ -10,11 +10,13 @@ function App() {
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
+  const API_BASE = import.meta.env.PROD ? "" : "http://localhost:8000";
+
   // Fetch document history from MongoDB on load
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/documents");
+        const response = await axios.get(`${API_BASE}/api/documents`);
         setDocuments(response.data);
       } catch (error) {
         console.error("Failed to fetch documents:", error);

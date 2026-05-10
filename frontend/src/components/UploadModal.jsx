@@ -39,7 +39,8 @@ export default function UploadModal({ onClose, onComplete }) {
     try {
       setTimeout(() => setProgressText("Running AI Extraction..."), 1500);
       
-      const response = await axios.post("http://localhost:8000/api/upload", formData, {
+      const API_BASE = import.meta.env.PROD ? "" : "http://localhost:8000";
+      const response = await axios.post(`${API_BASE}/api/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
