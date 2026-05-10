@@ -24,7 +24,7 @@ app.add_middleware(
 
 # MongoDB Configuration
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())
+client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
 db = client.ai_doc_intelligence
 collection = db.documents
 
