@@ -14,6 +14,16 @@ export default function DocumentCard({ data, onClick }) {
   // Find some amount to show on the card
   const amountStr = extracted.loan_amount || extracted.due_amount || extracted.balance || extracted.total_amount;
 
+  // Format Date if available
+  let dateStr = "Extracted Successfully";
+  if (data.created_at) {
+    const d = new Date(data.created_at);
+    dateStr = d.toLocaleString('en-US', { 
+      month: 'short', day: 'numeric', year: 'numeric', 
+      hour: 'numeric', minute: '2-digit', hour12: true 
+    });
+  }
+
   return (
     <motion.div 
       whileHover={{ y: -5, scale: 1.02 }}
@@ -40,9 +50,9 @@ export default function DocumentCard({ data, onClick }) {
             <span>{amountStr}</span>
           </div>
         )}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1 ml-auto whitespace-nowrap">
           <Calendar size={14} />
-          <span>Extracted Successfully</span>
+          <span>{dateStr}</span>
         </div>
       </div>
     </motion.div>
