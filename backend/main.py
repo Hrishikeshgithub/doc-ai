@@ -7,6 +7,7 @@ from ai_extractor import extract_data
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 from dotenv import load_dotenv
+import certifi
 
 load_dotenv(override=True) # Force override so Uvicorn reload picks up new passwords
 
@@ -23,7 +24,7 @@ app.add_middleware(
 
 # MongoDB Configuration
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGO_URI)
+client = AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client.ai_doc_intelligence
 collection = db.documents
 
