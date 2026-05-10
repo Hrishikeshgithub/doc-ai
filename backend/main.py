@@ -32,6 +32,7 @@ def read_root():
     return {"status": "Backend is running flawlessly. Enterprise mode active."}
 
 @app.get("/api/documents")
+@app.get("/documents")
 async def get_documents():
     """Fetch all processed documents from the database."""
     docs = []
@@ -43,6 +44,7 @@ async def get_documents():
     return docs
 
 @app.post("/api/upload")
+@app.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
     document_type: str = Form("Auto-detect")
