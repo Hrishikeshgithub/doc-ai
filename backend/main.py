@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from file_processor import process_file
 from ai_extractor import extract_data
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
 import certifi
@@ -24,9 +24,18 @@ app.add_middleware(
 
 # MongoDB Configuration
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
-db = client.ai_doc_intelligence
-collection = db.documents
+# Use lazy initialization for Serverless (Vercel) to prevent frozen SSL sockets
+client = None
+db = None
+collection = None
+
+def get_db_collection():
+    global client, db, collection
+    if client is None:
+        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
+        db = client.ai_doc_intelligence
+        collection = db.documents
+    return collection
 
 @app.get("/")
 def read_root():
@@ -34,12 +43,13 @@ def read_root():
 
 @app.get("/api/documents")
 @app.get("/documents")
-async def get_documents():
+def get_documents():
     """Fetch all processed documents from the database."""
     docs = []
+    col = get_db_collection()
     # Fetch all documents, newest first
-    cursor = collection.find().sort("created_at", -1)
-    async for document in cursor:
+    cursor = col.find().sort("created_at", -1)
+    for document in cursor:
         document["_id"] = str(document["_id"])  # Convert ObjectId to string
         docs.append(document)
     return docs
@@ -73,7 +83,8 @@ async def upload_document(
             "extracted_data": extracted_json,
             "created_at": datetime.utcnow().isoformat()
         }
-        await collection.insert_one(document_record)
+        col = get_db_collection()
+        col.insert_one(document_record)
         document_record["_id"] = str(document_record["_id"]) # Make JSON serializable
 
         return {
