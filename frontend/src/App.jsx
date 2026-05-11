@@ -10,7 +10,9 @@ function App() {
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const API_BASE = import.meta.env.PROD ? "" : "http://localhost:8000";
+  const API_BASE = import.meta.env.PROD 
+    ? "https://doc-ai-8z7a.onrender.com" 
+    : "http://localhost:8000";
 
   // Fetch document history from MongoDB on load
   useEffect(() => {
