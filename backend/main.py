@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from file_processor import process_file
@@ -7,23 +7,26 @@ from ai_extractor import extract_data
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from auth import (
+    get_users_collection, hash_password, verify_password,
+    create_access_token, get_current_user
+)
 
-load_dotenv(override=True) # Force override so Uvicorn reload picks up new passwords
+load_dotenv(override=True)
 
 app = FastAPI(title="AI Document Intelligence API")
 
-# Setup CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev, allow all
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# MongoDB Configuration
+# MongoDB
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-# Use lazy initialization for Serverless (Vercel) to prevent frozen SSL sockets
 client = None
 db = None
 collection = None
@@ -36,20 +39,55 @@ def get_db_collection():
         collection = db.documents
     return collection
 
+# --- Auth schemas ---
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+# --- Auth routes ---
+@app.post("/api/auth/register")
+@app.post("/auth/register")
+def register(body: RegisterRequest):
+    users = get_users_collection()
+    if users.find_one({"email": body.email}):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    users.insert_one({
+        "name": body.name,
+        "email": body.email,
+        "password": hash_password(body.password),
+        "created_at": datetime.utcnow().isoformat()
+    })
+    token = create_access_token({"email": body.email, "name": body.name})
+    return {"token": token, "name": body.name, "email": body.email}
+
+@app.post("/api/auth/login")
+@app.post("/auth/login")
+def login(body: LoginRequest):
+    users = get_users_collection()
+    user = users.find_one({"email": body.email})
+    if not user or not verify_password(body.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token({"email": user["email"], "name": user["name"]})
+    return {"token": token, "name": user["name"], "email": user["email"]}
+
+# --- Protected routes ---
 @app.get("/")
 def read_root():
     return {"status": "Backend is running flawlessly. Enterprise mode active."}
 
 @app.get("/api/documents")
 @app.get("/documents")
-def get_documents():
-    """Fetch all processed documents from the database."""
+def get_documents(current_user: dict = Depends(get_current_user)):
     docs = []
     col = get_db_collection()
-    # Fetch all documents, newest first
-    cursor = col.find().sort("created_at", -1)
+    cursor = col.find({"user_email": current_user["email"]}).sort("created_at", -1)
     for document in cursor:
-        document["_id"] = str(document["_id"])  # Convert ObjectId to string
+        document["_id"] = str(document["_id"])
         docs.append(document)
     return docs
 
@@ -57,40 +95,40 @@ def get_documents():
 @app.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    document_type: str = Form("Auto-detect")
+    document_type: str = Form("Auto-detect"),
+    current_user: dict = Depends(get_current_user)
 ):
     try:
-        # Read file bytes
         file_bytes = await file.read()
-        
-        # 1. Process the file (convert to image or text)
+
         try:
             processed_data = process_file(file_bytes, file.filename, file.content_type)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"File Processing Error: {str(e)}")
 
-        # 2. Extract Data via AI
         try:
             extracted_json = extract_data(processed_data, document_type)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Extraction Error: {str(e)}")
 
-        # 3. Save to MongoDB
         document_record = {
             "filename": file.filename,
             "document_type_hint": document_type,
             "extracted_data": extracted_json,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.utcnow().isoformat(),
+            "user_email": current_user["email"],
+            "user_name": current_user["name"]
         }
         col = get_db_collection()
         col.insert_one(document_record)
-        document_record["_id"] = str(document_record["_id"]) # Make JSON serializable
+        document_record["_id"] = str(document_record["_id"])
 
         return {
             "status": "success",
             "filename": file.filename,
             "extracted_data": extracted_json,
-            "record_id": document_record["_id"]
+            "record_id": document_record["_id"],
+            "created_at": document_record["created_at"]
         }
 
     except HTTPException as he:
