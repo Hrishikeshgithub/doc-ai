@@ -71,21 +71,23 @@ export default function UploadModal({ onClose, onComplete }) {
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="glass w-full max-w-lg rounded-3xl p-6 relative shadow-2xl"
       >
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+        <button onClick={onClose} className="absolute top-6 right-6 transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => e.currentTarget.style.color='var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}
         >
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-white">Upload Document</h2>
+        <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>Upload Document</h2>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-400 mb-2">Document Type Hint</label>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Document Type Hint</label>
           <select 
             value={docType}
             onChange={(e) => setDocType(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+            className="w-full rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors text-sm"
+            style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
           >
             <option>Auto-detect</option>
             <option>kyc</option>
@@ -99,20 +101,23 @@ export default function UploadModal({ onClose, onComplete }) {
           <>
             <div 
               {...getRootProps()} 
-              className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
-                isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-gray-400 hover:bg-surface/50'
-              }`}
+              className="border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all"
+              style={{
+                borderColor: isDragActive ? '#3b82f6' : 'var(--border)',
+                background: isDragActive ? 'rgba(59,130,246,0.06)' : 'transparent'
+              }}
             >
               <input {...getInputProps()} />
-              <div className="bg-surface w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UploadCloud size={28} className="text-primary" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'var(--surface)' }}>
+                <UploadCloud size={28} className="text-blue-500" />
               </div>
               {file ? (
-                <p className="font-medium text-white">{file.name}</p>
+                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
               ) : (
                 <>
-                  <p className="font-medium text-white">Drag & drop your file here</p>
-                  <p className="text-sm text-gray-400 mt-2">Supports PDF, DOCX, PNG, JPEG</p>
+                  <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Drag & drop your file here</p>
+                  <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Supports PDF, DOCX, PNG, JPEG</p>
                 </>
               )}
             </div>
@@ -132,15 +137,16 @@ export default function UploadModal({ onClose, onComplete }) {
             {progressText === "Done!" ? (
               <CheckCircle2 size={64} className="text-green-500 mx-auto mb-6" />
             ) : (
-              <Loader2 size={64} className="text-primary animate-spin mx-auto mb-6" />
+              <Loader2 size={64} className="text-blue-500 animate-spin mx-auto mb-6" />
             )}
-            <h3 className="text-xl font-medium text-white">{progressText}</h3>
-            <div className="w-full bg-surface h-2 rounded-full mt-6 overflow-hidden relative">
+            <h3 className="text-xl font-medium" style={{ color: 'var(--text-primary)' }}>{progressText}</h3>
+            <div className="w-full h-2 rounded-full mt-6 overflow-hidden relative"
+              style={{ background: 'var(--surface)' }}>
               <motion.div 
                 initial={{ width: "0%" }}
                 animate={{ width: progressText === "Done!" ? "100%" : "60%" }}
                 transition={{ duration: 1.5 }}
-                className="absolute top-0 left-0 h-full bg-primary"
+                className="absolute top-0 left-0 h-full bg-blue-500"
               />
             </div>
           </div>
