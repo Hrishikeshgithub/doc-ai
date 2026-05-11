@@ -7,7 +7,6 @@ from ai_extractor import extract_data
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
-import certifi
 
 load_dotenv(override=True) # Force override so Uvicorn reload picks up new passwords
 
@@ -32,7 +31,7 @@ collection = None
 def get_db_collection():
     global client, db, collection
     if client is None:
-        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
+        client = MongoClient(MONGO_URI)
         db = client.ai_doc_intelligence
         collection = db.documents
     return collection

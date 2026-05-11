@@ -5,6 +5,5 @@ pydantic
 groq
 PyMuPDF
 python-docx
-motor[srv]
-certifi
+pymongo[srv]
 python-dotenv
